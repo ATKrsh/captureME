@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>captureME - Mobile & Android Screen Recorder</title>
+  
+  <!-- PWA Manifest & Meta Tags -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#141822" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Audio-reactive mobile & desktop screen recorder and screenshot tool" />
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Top Mobile Bar -->
+    <header class="top-bar">
+      <div class="logo">
+        <span class="logo-icon">●</span>
+        <span class="logo-text">capture<strong class="highlight">ME</strong></span>
+        <span class="badge">Android</span>
+      </div>
+      <div class="top-actions">
+        <button id="mic-perm-btn" class="icon-btn" title="Enable Audio Spectrum">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+          </svg>
+        </button>
+        <button id="settings-toggle-btn" class="icon-btn" title="Settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Canvas Viewport -->
+    <main class="viewport">
+      <canvas id="orbCanvas"></canvas>
+
+      <div class="gesture-hint">
+        <p><strong>Touch Center:</strong> Toggle Recording</p>
+        <p><strong>Touch Ring:</strong> Take Screenshot</p>
+        <p><strong>Drag:</strong> Move Orb</p>
+      </div>
+
+      <!-- Quick Action Floating Dock -->
+      <div class="floating-dock">
+        <button id="btn-screenshot" class="dock-btn snap-btn">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          <span>Screenshot</span>
+        </button>
+
+        <button id="btn-record" class="dock-btn rec-btn">
+          <span class="rec-dot"></span>
+          <span id="rec-btn-text">Record Screen</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- Slide-over Settings Drawer -->
+    <div id="settings-drawer" class="drawer hidden">
+      <div class="drawer-header">
+        <h3>captureME Settings</h3>
+        <button id="close-settings-btn" class="close-btn">&times;</button>
+      </div>
+      <div class="drawer-content">
+        <div class="setting-group">
+          <label>
+            <span>App Opacity</span>
+            <span id="val-opacity">90%</span>
+          </label>
+          <input type="range" id="slider-opacity" min="20" max="100" value="90" />
+        </div>
+
+        <div class="setting-group">
+          <label>
+            <span>Glow Opacity</span>
+            <span id="val-glow-op">90%</span>
+          </label>
+          <input type="range" id="slider-glow-op" min="10" max="100" value="90" />
+        </div>
+
+        <div class="setting-group">
+          <label>
+            <span>Glow Radius</span>
+            <span id="val-glow-sz">50%</span>
+          </label>
+          <input type="range" id="slider-glow-sz" min="10" max="100" value="50" />
+        </div>
+
+        <div class="setting-group">
+          <label>
+            <span>Orb Size</span>
+            <span id="val-orb-sz">50%</span>
+          </label>
+          <input type="range" id="slider-orb-sz" min="10" max="100" value="50" />
+        </div>
+
+        <div class="setting-group toggle-group">
+          <label for="toggle-breathing">Breathing Animation</label>
+          <input type="checkbox" id="toggle-breathing" checked />
+        </div>
+
+        <div class="setting-group toggle-group">
+          <label for="toggle-audio-reactive">Audio Spectrum Glow</label>
+          <input type="checkbox" id="toggle-audio-reactive" checked />
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+      <span id="toast-msg">Screenshot saved!</span>
+    </div>
+
+    <!-- Screen Flash Overlay -->
+    <div id="flash-overlay" class="flash"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

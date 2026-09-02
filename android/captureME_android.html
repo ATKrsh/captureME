@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>captureME Android</title>
+  
+  <meta name="theme-color" content="#141822" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #0d1017;
+      --panel-bg: rgba(20, 24, 34, 0.85);
+      --panel-border: rgba(255, 255, 255, 0.12);
+      --cyan-accent: #00d2ff;
+      --cyan-glow: rgba(0, 210, 255, 0.5);
+      --red-accent: #ff2828;
+      --red-glow: rgba(255, 40, 40, 0.5);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      font-family: var(--font-family);
+      color: var(--text-main);
+    }
+
+    #app {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: radial-gradient(circle at center, #181d2a 0%, #0a0c12 100%);
+    }
+
+    .top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 20;
+      background: rgba(13, 16, 23, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .logo-icon {
+      color: var(--cyan-accent);
+      text-shadow: 0 0 10px var(--cyan-glow);
+      font-size: 1.3rem;
+    }
+
+    .highlight {
+      color: var(--cyan-accent);
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      background: rgba(0, 210, 255, 0.15);
+      color: var(--cyan-accent);
+      padding: 2px 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 210, 255, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.94);
+      background: rgba(0, 210, 255, 0.2);
+      border-color: var(--cyan-accent);
+    }
+
+    .icon-btn.active {
+      background: rgba(0, 210, 255, 0.25);
+      border-color: var(--cyan-accent);
+      color: var(--cyan-accent);
+      box-shadow: 0 0 12px var(--cyan-glow);
+    }
+
+    .viewport {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #orbCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+
+    #orbCanvas:active {
+      cursor: grabbing;
+    }
+
+    .gesture-hint {
+      position: absolute;
+      top: 75px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(20, 24, 34, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 16px;
+      border-radius: 20px;
+      pointer-events: none;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+      opacity: 0.85;
+    }
+
+    .gesture-hint strong {
+      color: var(--cyan-accent);
+    }
+
+    .floating-dock {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 14px;
+      z-index: 15;
+      background: rgba(20, 24, 34, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 10px 18px;
+      border-radius: 40px;
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .dock-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      padding: 10px 18px;
+      border-radius: 25px;
+      font-family: var(--font-family);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .dock-btn:active {
+      transform: scale(0.95);
+    }
+
+    .snap-btn:hover, .snap-btn:active {
+      background: rgba(0, 210, 255, 0.2);
+      border-color: var(--cyan-accent);
+      color: var(--cyan-accent);
+    }
+
+    .rec-btn {
+      background: rgba(255, 40, 40, 0.15);
+      border-color: rgba(255, 40, 40, 0.4);
+      color: #ff6b6b;
+    }
+
+    .rec-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--red-accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--red-glow);
+    }
+
+    .rec-btn.recording {
+      background: var(--red-accent);
+      color: #ffffff;
+      box-shadow: 0 0 20px var(--red-glow);
+      animation: pulse-red 1.5s infinite;
+    }
+
+    .rec-btn.recording .rec-dot {
+      background: #ffffff;
+    }
+
+    @keyframes pulse-red {
+      0% { box-shadow: 0 0 10px var(--red-glow); }
+      50% { box-shadow: 0 0 25px rgba(255, 40, 40, 0.8); }
+      100% { box-shadow: 0 0 10px var(--red-glow); }
+    }
+
+    .drawer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 320px;
+      max-width: 85vw;
+      height: 100%;
+      background: rgba(18, 22, 32, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-left: 1px solid var(--panel-border);
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: -10px 0 40px rgba(0,0,0,0.6);
+    }
+
+    .drawer.hidden {
+      transform: translateX(100%);
+      pointer-events: none;
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .drawer-header h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.6rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .drawer-content {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .setting-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .setting-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .setting-group label span:last-child {
+      color: var(--cyan-accent);
+      font-weight: 600;
+    }
+
+    .setting-group input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #2a3142;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    .setting-group input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--cyan-accent);
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--cyan-glow);
+    }
+
+    .toggle-group {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toggle-group label {
+      color: var(--text-main);
+    }
+
+    .toggle-group input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--cyan-accent);
+    }
+
+    .toast {
+      position: absolute;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 210, 255, 0.9);
+      color: #05101a;
+      padding: 10px 22px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      z-index: 40;
+      box-shadow: 0 4px 20px var(--cyan-glow);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .toast.hidden {
+      opacity: 0;
+      transform: translate(-50%, 15px);
+      pointer-events: none;
+    }
+
+    .flash {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #ffffff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 50;
+      transition: opacity 0.15s ease-out;
+    }
+
+    .flash.active {
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header class="top-bar">
+      <div class="logo">
+        <span class="logo-icon">●</span>
+        <span class="logo-text">capture<strong class="highlight">ME</strong></span>
+        <span class="badge">Android</span>
+      </div>
+      <div class="top-actions">
+        <button id="mic-perm-btn" class="icon-btn" title="Enable Audio Spectrum">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+          </svg>
+        </button>
+        <button id="settings-toggle-btn" class="icon-btn" title="Settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="viewport">
+      <canvas id="orbCanvas"></canvas>
+
+      <div class="gesture-hint">
+        <p><strong>Touch Center:</strong> Toggle Recording</p>
+        <p><strong>Touch Ring:</strong> Take Screenshot</p>
+        <p><strong>Drag:</strong> Move Orb</p>
+      </div>
+
+      <div class="floating-dock">
+        <button id="btn-screenshot" class="dock-btn snap-btn">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          <span>Screenshot</span>
+        </button>
+
+        <button id="btn-record" class="dock-btn rec-btn">
+          <span class="rec-dot"></span>
+          <span id="rec-btn-text">Record Screen</span>
+        </button>
+      </div>
+    </main>
+
+    <div id="settings-drawer" class="drawer hidden">
+      <div class="drawer-header">
+        <h3>captureME Settings</h3>
+        <button id="close-settings-btn" class="close-btn">&times;</button>
+      </div>
+      <div class="drawer-content">
+        <div class="setting-group">
+          <label>
+            <span>App Opacity</span>
+            <span id="val-opacity">90%</span>
+          </label>
+          <input type="range" id="slider-opacity" min="20" max="100" value="90" />
+        </div>
+
+        <div class="setting-group">
+          <label>
+            <span>Glow Opacity</span>
+            <span id="val-glow-op">90%</span>
+          </label>
+          <input type="range" id="slider-glow-op" min="10" max="100" value="90" />
+        </div>
+
+        <div class="setting-group">
+          <label>
+            <span>Glow Radius</span>
+            <span id="val-glow-sz">50%</span>
+          </label>
+          <input type="range" id="slider-glow-sz" min="10" max="100" value="50" />
+        </div>
+
+        <div class="setting-group">
+          <label>
+            <span>Orb Size</span>
+            <span id="val-orb-sz">50%</span>
+          </label>
+          <input type="range" id="slider-orb-sz" min="10" max="100" value="50" />
+        </div>
+
+        <div class="setting-group toggle-group">
+          <label for="toggle-breathing">Breathing Animation</label>
+          <input type="checkbox" id="toggle-breathing" checked />
+        </div>
+
+        <div class="setting-group toggle-group">
+          <label for="toggle-audio-reactive">Audio Spectrum Glow</label>
+          <input type="checkbox" id="toggle-audio-reactive" checked />
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden">
+      <span id="toast-msg">Screenshot saved!</span>
+    </div>
+
+    <div id="flash-overlay" class="flash"></div>
+  </div>
+
+  <script>
+    (function () {
+      const canvas = document.getElementById('orbCanvas');
+      const ctx = canvas.getContext('2d');
+      const btnScreenshot = document.getElementById('btn-screenshot');
+      const btnRecord = document.getElementById('btn-record');
+      const recBtnText = document.getElementById('rec-btn-text');
+      const micPermBtn = document.getElementById('mic-perm-btn');
+      const settingsToggleBtn = document.getElementById('settings-toggle-btn');
+      const closeSettingsBtn = document.getElementById('close-settings-btn');
+      const settingsDrawer = document.getElementById('settings-drawer');
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      const flashOverlay = document.getElementById('flash-overlay');
+
+      const sliderOpacity = document.getElementById('slider-opacity');
+      const sliderGlowOp = document.getElementById('slider-glow-op');
+      const sliderGlowSz = document.getElementById('slider-glow-sz');
+      const sliderOrbSz = document.getElementById('slider-orb-sz');
+      const toggleBreathing = document.getElementById('toggle-breathing');
+      const toggleAudioReactive = document.getElementById('toggle-audio-reactive');
+
+      const valOpacity = document.getElementById('val-opacity');
+      const valGlowOp = document.getElementById('val-glow-op');
+      const valGlowSz = document.getElementById('val-glow-sz');
+      const valOrbSz = document.getElementById('val-orb-sz');
+
+      const config = {
+        opacity: 0.9,
+        glow_opacity: 0.9,
+        glow_size_pct: 50,
+        size_percent: 50,
+        breathing: true,
+        audio_reactive: true,
+        pos_x: 0,
+        pos_y: 0,
+      };
+
+      let isRecording = false;
+      let mediaRecorder = null;
+      let recordedChunks = [];
+      let screenStream = null;
+
+      let audioCtx = null;
+      let analyser = null;
+      let audioDataArray = null;
+      let currentVolume = 0.0;
+      let currentFrequency = 0.0;
+
+      let breathPhase = 0.0;
+      let currentGlowIntensity = 0.0;
+      let currentGlowSizeFactor = 0.0;
+      let currentIconScaleFactor = 0.0;
+
+      let isDragging = false;
+      let dragOffset = { x: 0, y: 0 };
+      let lastTouchPos = { x: 0, y: 0 };
+      let lastTouchTime = performance.now();
+      let smoothAccel = 0.0;
+      let lastMouseSpeed = 0.0;
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        if (config.pos_x === 0 && config.pos_y === 0) {
+          config.pos_x = canvas.width / 2;
+          config.pos_y = canvas.height / 2;
+        }
+      }
+
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      function showToast(msg) {
+        toastMsg.textContent = msg;
+        toast.classList.remove('hidden');
+        setTimeout(() => {
+          toast.classList.add('hidden');
+        }, 2400);
+      }
+
+      function triggerFlash() {
+        flashOverlay.classList.add('active');
+        setTimeout(() => {
+          flashOverlay.classList.remove('active');
+        }, 180);
+      }
+
+      async function initAudio() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const source = audioCtx.createMediaStreamSource(stream);
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 512;
+          source.connect(analyser);
+
+          audioDataArray = new Uint8Array(analyser.frequencyBinCount);
+          micPermBtn.classList.add('active');
+          showToast('Microphone audio spectrum enabled!');
+        } catch (err) {
+          console.warn('Audio permission denied or unavailable:', err);
+          showToast('Audio spectrum mode inactive');
+        }
+      }
+
+      micPermBtn.addEventListener('click', () => {
+        if (!audioCtx) {
+          initAudio();
+        } else if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+          micPermBtn.classList.add('active');
+        }
+      });
+
+      function processAudio() {
+        if (!analyser || !config.audio_reactive) {
+          currentVolume += (0.0 - currentVolume) * 0.1;
+          currentFrequency += (0.0 - currentFrequency) * 0.1;
+          return;
+        }
+
+        analyser.getByteFrequencyData(audioDataArray);
+        
+        let sum = 0;
+        for (let i = 0; i < audioDataArray.length; i++) {
+          sum += audioDataArray[i] * audioDataArray[i];
+        }
+        let rms = Math.sqrt(sum / audioDataArray.length) / 255.0;
+        let targetVol = Math.min(1.0, rms * 3.5);
+
+        if (targetVol > currentVolume) {
+          currentVolume = targetVol;
+        } else {
+          currentVolume += (targetVol - currentVolume) * 0.35;
+        }
+
+        let maxBin = 0;
+        let maxVal = 0;
+        for (let i = 2; i < audioDataArray.length; i++) {
+          if (audioDataArray[i] > maxVal) {
+            maxVal = audioDataArray[i];
+            maxBin = i;
+          }
+        }
+        let normFreq = maxVal > 10 ? Math.min(1.0, maxBin / (audioDataArray.length * 0.6)) : 0.0;
+        if (normFreq > currentFrequency) {
+          currentFrequency = normFreq;
+        } else {
+          currentFrequency += (normFreq - currentFrequency) * 0.30;
+        }
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        processAudio();
+
+        if (config.breathing) {
+          breathPhase += 0.04;
+        }
+        const sineVal = (Math.sin(breathPhase) + 1.0) / 2.0;
+
+        let targetGlowIntensity, targetGlowSize, targetIconScale;
+        if (config.breathing) {
+          targetGlowIntensity = 0.25 + sineVal * 0.25 + currentVolume * 0.85;
+          targetGlowSize = 0.20 + sineVal * 0.15 + currentFrequency * 0.80;
+          targetIconScale = sineVal * 2.0 + smoothAccel * 18.0;
+        } else {
+          targetGlowIntensity = 0.2 + currentVolume * 0.8;
+          targetGlowSize = 0.2 + currentFrequency * 0.8;
+          targetIconScale = smoothAccel * 12.0;
+        }
+
+        currentGlowIntensity += (targetGlowIntensity - currentGlowIntensity) * 0.35;
+        currentGlowSizeFactor += (targetGlowSize - currentGlowSizeFactor) * 0.35;
+        currentIconScaleFactor += (targetIconScale - currentIconScaleFactor) * 0.25;
+
+        const baseSize = 40 + 120 * (config.size_percent / 100.0);
+        const dSize = baseSize + currentIconScaleFactor;
+        const cx = config.pos_x;
+        const cy = config.pos_y;
+
+        const intensity = Math.min(1.0, Math.max(0.0, currentGlowIntensity));
+        const glowUserOp = config.glow_opacity;
+        const glowAlpha = Math.min(0.95, (0.2 + 0.75 * intensity) * glowUserOp);
+
+        const freqFactor = Math.min(1.0, Math.max(0.0, currentGlowSizeFactor));
+        const glowSzScale = config.glow_size_pct / 100.0;
+        const glowBaseExt = 5.0 + 45.0 * glowSzScale;
+        const glowAudioExt = freqFactor * (5.0 + 65.0 * glowSzScale);
+        const glowRadius = dSize / 2.0 + glowBaseExt + glowAudioExt;
+
+        const mainHue = isRecording ? '355, 100%, 58%' : '190, 100%, 50%';
+
+        const outerRadius = glowRadius + 18.0;
+        const gradOuter = ctx.createRadialGradient(cx, cy, 0, cx, cy, outerRadius);
+        gradOuter.addColorStop(0, `hsla(${mainHue}, ${glowAlpha * 0.45})`);
+        gradOuter.addColorStop(0.6, `hsla(${mainHue}, ${glowAlpha * 0.15})`);
+        gradOuter.addColorStop(1, `hsla(${mainHue}, 0)`);
+
+        ctx.fillStyle = gradOuter;
+        ctx.beginPath();
+        ctx.arc(cx, cy, outerRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        const gradInner = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius);
+        gradInner.addColorStop(0, `hsla(${mainHue}, ${glowAlpha})`);
+        gradInner.addColorStop(0.65, `hsla(${mainHue}, ${glowAlpha * 0.45})`);
+        gradInner.addColorStop(1, `hsla(${mainHue}, 0)`);
+
+        ctx.fillStyle = gradInner;
+        ctx.beginPath();
+        ctx.arc(cx, cy, glowRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        const bodyAlpha = 0.86 * config.opacity;
+        ctx.fillStyle = `rgba(20, 24, 34, ${bodyAlpha})`;
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.2 + 0.7 * intensity) * config.opacity})`;
+        ctx.lineWidth = 2.0;
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, dSize / 2.0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        const chkRadius = dSize * 0.18;
+        ctx.fillStyle = isRecording
+          ? `rgba(255, 40, 40, ${config.opacity})`
+          : `rgba(35, 42, 58, ${0.8 * config.opacity})`;
+        ctx.strokeStyle = isRecording
+          ? `rgba(255, 180, 180, ${config.opacity})`
+          : `rgba(0, 210, 255, ${0.7 * config.opacity})`;
+        ctx.lineWidth = 2.0;
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, chkRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        if (isRecording) {
+          const sqW = chkRadius * 0.8;
+          ctx.fillStyle = `rgba(255, 255, 255, ${config.opacity})`;
+          ctx.fillRect(cx - sqW / 2, cy - sqW / 2, sqW, sqW);
+        } else {
+          const dotR = chkRadius * 0.35;
+          ctx.fillStyle = `rgba(0, 210, 255, ${(0.6 + 0.4 * intensity) * config.opacity})`;
+          ctx.beginPath();
+          ctx.arc(cx, cy, dotR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+
+      function getEventPos(e) {
+        if (e.touches && e.touches.length > 0) {
+          return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
+      }
+
+      function handleStart(e) {
+        const pos = getEventPos(e);
+        const baseSize = 40 + 120 * (config.size_percent / 100.0);
+        const dist = Math.hypot(pos.x - config.pos_x, pos.y - config.pos_y);
+
+        if (dist <= baseSize + 30) {
+          isDragging = true;
+          dragOffset = { x: pos.x - config.pos_x, y: pos.y - config.pos_y };
+          lastTouchPos = pos;
+          lastTouchTime = performance.now();
+        }
+      }
+
+      function handleMove(e) {
+        if (!isDragging) return;
+        const pos = getEventPos(e);
+        const now = performance.now();
+        const dt = Math.max(1, now - lastTouchTime) / 1000.0;
+
+        const dx = pos.x - lastTouchPos.x;
+        const dy = pos.y - lastTouchPos.y;
+        const speed = Math.hypot(dx, dy) / dt;
+        const accel = Math.abs(speed - lastMouseSpeed) / dt;
+        const normAccel = Math.min(1.0, accel / 10000.0);
+
+        smoothAccel += (normAccel - smoothAccel) * 0.2;
+        lastMouseSpeed = speed;
+        lastTouchPos = pos;
+        lastTouchTime = now;
+
+        config.pos_x = Math.max(50, Math.min(canvas.width - 50, pos.x - dragOffset.x));
+        config.pos_y = Math.max(50, Math.min(canvas.height - 50, pos.y - dragOffset.y));
+      }
+
+      function handleEnd(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        smoothAccel = 0.0;
+      }
+
+      canvas.addEventListener('mousedown', handleStart);
+      canvas.addEventListener('mousemove', handleMove);
+      canvas.addEventListener('mouseup', handleEnd);
+
+      canvas.addEventListener('touchstart', handleStart, { passive: true });
+      canvas.addEventListener('touchmove', handleMove, { passive: true });
+      canvas.addEventListener('touchend', handleEnd, { passive: true });
+
+      canvas.addEventListener('click', (e) => {
+        const pos = getEventPos(e);
+        const baseSize = 40 + 120 * (config.size_percent / 100.0);
+        const chkRadius = baseSize * 0.18;
+        const dist = Math.hypot(pos.x - config.pos_x, pos.y - config.pos_y);
+
+        if (dist <= chkRadius * 1.6) {
+          toggleRecording();
+        } else if (dist <= baseSize) {
+          takeScreenshot();
+        }
+      });
+
+      async function toggleRecording() {
+        if (!isRecording) {
+          try {
+            if (!screenStream || !screenStream.active) {
+              screenStream = await navigator.mediaDevices.getDisplayMedia({
+                video: { mediaSource: 'screen' },
+                audio: true,
+              });
+            }
+
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(screenStream, { mimeType: 'video/webm' });
+            mediaRecorder.ondataavailable = (event) => {
+              if (event.data.size > 0) recordedChunks.push(event.data);
+            };
+            mediaRecorder.onstop = saveRecording;
+            mediaRecorder.start(1000);
+
+            isRecording = true;
+            btnRecord.classList.add('recording');
+            recBtnText.textContent = 'Stop Recording';
+            showToast('Screen recording started!');
+          } catch (err) {
+            console.error('Screen recording failed:', err);
+            showToast('Screen capture permission cancelled');
+          }
+        } else {
+          if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+          }
+          isRecording = false;
+          btnRecord.classList.remove('recording');
+          recBtnText.textContent = 'Record Screen';
+        }
+      }
+
+      function saveRecording() {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 15);
+        a.download = `captureME_recording_${timestamp}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 100);
+        showToast('Video saved to downloads!');
+      }
+
+      async function takeScreenshot() {
+        triggerFlash();
+        try {
+          if (!screenStream || !screenStream.active) {
+            screenStream = await navigator.mediaDevices.getDisplayMedia({
+              video: { mediaSource: 'screen' },
+            });
+          }
+
+          const video = document.createElement('video');
+          video.srcObject = screenStream;
+          await video.play();
+
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = video.videoWidth || canvas.width;
+          tempCanvas.height = video.videoHeight || canvas.height;
+          const tCtx = tempCanvas.getContext('2d');
+          tCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+
+          const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 15);
+          const a = document.createElement('a');
+          a.href = tempCanvas.toDataURL('image/png');
+          a.download = `captureME_screenshot_${timestamp}.png`;
+          a.click();
+          showToast('Screenshot saved!');
+        } catch (err) {
+          const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 15);
+          const a = document.createElement('a');
+          a.href = canvas.toDataURL('image/png');
+          a.download = `captureME_orb_${timestamp}.png`;
+          a.click();
+          showToast('Orb screenshot saved!');
+        }
+      }
+
+      btnScreenshot.addEventListener('click', takeScreenshot);
+      btnRecord.addEventListener('click', toggleRecording);
+
+      settingsToggleBtn.addEventListener('click', () => {
+        settingsDrawer.classList.toggle('hidden');
+      });
+
+      closeSettingsBtn.addEventListener('click', () => {
+        settingsDrawer.classList.add('hidden');
+      });
+
+      sliderOpacity.addEventListener('input', (e) => {
+        config.opacity = e.target.value / 100.0;
+        valOpacity.textContent = `${e.target.value}%`;
+      });
+
+      sliderGlowOp.addEventListener('input', (e) => {
+        config.glow_opacity = e.target.value / 100.0;
+        valGlowOp.textContent = `${e.target.value}%`;
+      });
+
+      sliderGlowSz.addEventListener('input', (e) => {
+        config.glow_size_pct = parseInt(e.target.value, 10);
+        valGlowSz.textContent = `${e.target.value}%`;
+      });
+
+      sliderOrbSz.addEventListener('input', (e) => {
+        config.size_percent = parseInt(e.target.value, 10);
+        valOrbSz.textContent = `${e.target.value}%`;
+      });
+
+      toggleBreathing.addEventListener('change', (e) => {
+        config.breathing = e.target.checked;
+      });
+
+      toggleAudioReactive.addEventListener('change', (e) => {
+        config.audio_reactive = e.target.checked;
+      });
+    })();
+  </script>
+</body>
+</html>
